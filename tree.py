@@ -6,16 +6,19 @@ Decision Tree
 import numpy as np
 import math
 from collections import Counter
+from operator import itemgetter
 
 class TNode(object):
 
-    def __init__(self, data=[], attributes={}, parent=None, children=[]):
+    def __init__(self, data=[], attributes={}, parent=None, children=[], parent_edge=None):
         self.parent = parent
         self.children = children
         self.data = data
         self.attributes = attributes.copy()
         self.name = ""
+        self.parent_edge = parent_edge 
         self.predicted_class = {}
+        self.attribute_used = None
 
     def activeAttributes(self):
         active_attributes = []
@@ -37,7 +40,9 @@ class TNode(object):
         print "Entropy scores", score
         min_index = score.index(min(score))
 
-        return active_attributes[min_index]
+        attribute_used = active_attributes[min_index]
+        self.attribute_used = attribute_used
+        return attribute_used
 
     def attributeActualIndex(self, att_index):
         return att_index
@@ -121,6 +126,10 @@ class TNode(object):
     def findSplittingRequired(self):
         classes = set(self.data[:,-1])
         class_case = True if len(classes) > 1 else False
+
+        if class_case == False:
+            return False
+
         att_case = False
         for att in self.attributes:
             if self.attributes[att] == True:
@@ -143,7 +152,7 @@ class TNode(object):
             _parent = self
 
 
-            node = TNode(_data, _attributes, _parent)
+            node = TNode(_data, _attributes, _parent, [], parent_edge=child)
             self.children.append(node)
 
             _splitting_required = node.findSplittingRequired()
@@ -166,23 +175,63 @@ class TNode(object):
         
         self.predicted_class = predicted_class
 
+    def predictClass(self, test_data):
+        _att_used = self.attribute_used
+        predicted_class = self.predicted_class
+        for child in self.children:
+            if child.parent_edge == test_data[_att_used]:
+                if child.predicted_class:
+                    predicted_class = child.predicted_class
+                    return predicted_class
+                else:
+                    return child.predictClass(test_data)
+        return predicted_class
+        
+    def findAccuracy(self, data):
+        count = 0
+        for t in data:
+            print t
+            res = root.predictClass(t[:-1])
+            try:
+                res = sorted(res.items(), key=itemgetter(1))[-1][0]
+            except IndexError:
+                continue
+            if res == t[-1]:
+                print count, len(data)
+                count += 1
+
+        return float(count)/len(data)
+
 if __name__ == "__main__":
-    #reading data
-    data = []
+    def process_data(data_file):
+        _data = []
+        for all_lines in data_file:
+            all_lines = all_lines.split()
+            for line in all_lines:
+                line = line.split(',')
+                temp = line[1:-1]
+                temp.append(line[0])
+                temp = np.array(temp)
+                _data.append(temp)
+                print temp
+        _data = np.array(_data)
+        return _data
+
 
     f = open("MushroomTrain.csv")
-    for all_lines in f:
-        all_lines = all_lines.split()
-        for line in all_lines:
-            line = line.split(',')
-            temp = line[1:-1]
-            temp.append(line[0])
-            temp = np.array(temp)
-            data.append(temp)
-            print temp
-    
-    data = np.array(data)
+    train_data = process_data(f)
+    f.close()
+
+    f = open("MushroomTest.csv")
+    test_data = process_data(f)
+    f.close()
+
     attributes = {0: True, 1: True, 2: True, 3: True}
-    root = TNode(data, attributes, None, [])
+    root = TNode(train_data, attributes, None, [])
     root.findChildren()
 
+    train_accuracy = root.findAccuracy(train_data)
+    test_accuracy = root.findAccuracy(test_data)
+
+    print "Accuracy on training data is", train_accuracy
+    print "Accuracy on test data is", test_accuracy
