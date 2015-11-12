@@ -21,6 +21,10 @@ class TNode(object):
         self.attribute_used = None
 
     def activeAttributes(self):
+        """
+            Attributes to be considered for splitting the current
+            node
+        """
         active_attributes = []
         for att in self.attributes:
             if self.attributes[att]:
@@ -112,12 +116,19 @@ class TNode(object):
             the current node can have
         """
         actual_attribute_index = self.attributeActualIndex(min_att)
-        _unique_types = set(self.data[:, actual_attribute_index])
-        return _unique_types
+        #_unique_types = set(self.data[:, actual_attribute_index])
+        attribute = {}
+        attribute[0] = ('b', 'c', 'x', 'f', 'k', 's')
+        attribute[1] = ('f', 'g', 'y', 's')
+        attribute[2] = ('n', 'b', 'c', 'g', 'r', 'p', 'u', 'e', 'w', 'y', 't', 'f')
+        attribute[3] = ('t', 'f')
+        return attribute[actual_attribute_index] 
 
     def findChildrenDataAttributes(self, child, min_att):
         actual_attribute_index = self.attributeActualIndex(min_att)
         _data = self.data[np.where(self.data[:, actual_attribute_index] == child)]
+        if len(_data) == 0:
+            _data = self.data
         self.attributes[actual_attribute_index] = False 
         _attributes = self.attributes.copy()
 
@@ -192,10 +203,7 @@ class TNode(object):
         for t in data:
             print t
             res = root.predictClass(t[:-1])
-            try:
-                res = sorted(res.items(), key=itemgetter(1))[-1][0]
-            except IndexError:
-                continue
+            res = sorted(res.items(), key=itemgetter(1))[-1][0]
             if res == t[-1]:
                 print count, len(data)
                 count += 1
