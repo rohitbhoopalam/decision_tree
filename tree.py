@@ -19,6 +19,7 @@ class TNode(object):
         self.parent_edge = parent_edge 
         self.predicted_class = {}
         self.attribute_used = None
+        self.entropy_value = None
 
     def activeAttributes(self):
         """
@@ -41,8 +42,10 @@ class TNode(object):
         active_attributes = self.activeAttributes()
         for att_index in active_attributes:
             score.append(self.entropy(att_index))
-        print "Entropy scores", score
+        #print "Entropy scores", score
         min_index = score.index(min(score))
+        self.entropy_value = score[min_index]
+        print self.entropy_value
 
         attribute_used = active_attributes[min_index]
         self.attribute_used = attribute_used
@@ -116,7 +119,8 @@ class TNode(object):
             the current node can have
         """
         actual_attribute_index = self.attributeActualIndex(min_att)
-        #_unique_types = set(self.data[:, actual_attribute_index])
+        _unique_types = set(self.data[:, actual_attribute_index])
+        return _unique_types
         attribute = {}
         attribute[0] = ('b', 'c', 'x', 'f', 'k', 's')
         attribute[1] = ('f', 'g', 'y', 's')
@@ -156,10 +160,10 @@ class TNode(object):
         self.name = str(min_att)
         children = self.computeOfChildren(min_att)
 
-        print min_att, children
+        #print min_att, children
         for child in children:
             _data, _attributes = self.findChildrenDataAttributes(child, min_att)
-            print child, _data, _attributes, len(_data)
+            #print child, _data, _attributes, len(_data)
             _parent = self
 
 
@@ -201,12 +205,18 @@ class TNode(object):
     def findAccuracy(self, data):
         count = 0
         for t in data:
-            print t
+            #print t
             res = root.predictClass(t[:-1])
-            res = sorted(res.items(), key=itemgetter(1))[-1][0]
+            try:
+                res = sorted(res.items(), key=itemgetter(1))[-1][0]
+            except IndexError:
+                continue
             if res == t[-1]:
-                print count, len(data)
+                #print count, len(data)
                 count += 1
+            else:
+                print t
+                print "predicted", res
 
         return float(count)/len(data)
 
@@ -221,7 +231,7 @@ if __name__ == "__main__":
                 temp.append(line[0])
                 temp = np.array(temp)
                 _data.append(temp)
-                print temp
+                #print temp
         _data = np.array(_data)
         return _data
 
